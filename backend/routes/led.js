@@ -8,6 +8,10 @@ router.get("/GetBankruptList/:id", ledController.GetBankruptList);
 router.post("/encoding", ledController.encodingBase64);
 router.post("/decoding", ledController.decodingBase64);
 
-router.post("/encryptURSA", ledController.encryptURSA);
+router.post("/nodeRSA", ledController.nodeRSA);
+
+router.post("/crypto", ledController.crypto);
+router.post("/encrypLEDpub", ledController.encrypLEDpub);
+router.post("/decryptLEDPrivate", ledController.decryptLEDPrivate);
 
 module.exports = router;

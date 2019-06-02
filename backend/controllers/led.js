@@ -43,11 +43,11 @@ exports.decodingBase64 = (req, res, next) => {
   });
 }
 
-exports.encryptURSA = (req, res, next) => {
+exports.nodeRSA = (req, res, next) => {
 
-  console.log('encryptURSA /API data:' );
+  console.log('nodeRSA /API :' );
 
-  encryptURSA().then(result =>{
+  nodeRSA().then(result =>{
     res.status(200).json({
       message:  "Successfully!",
       result: result
@@ -61,6 +61,62 @@ exports.encryptURSA = (req, res, next) => {
   });
 }
 
+exports.crypto = (req, res, next) => {
+
+  console.log('crypto /API :' );
+
+  crypto().then(result =>{
+    res.status(200).json({
+      message:  "Successfully!",
+      result: result
+    });
+
+  },err=>{
+    console.log(err);
+    res.status(400).json({
+      message:  "Was error" + err,
+    });
+  });
+}
+
+exports.encrypLEDpub = (req, res, next) => {
+  console.log('encrypLEDpub /API :' );
+  const toEncrypt = req.body.data;
+
+  encrypLEDpub(toEncrypt).then(result =>{
+    res.status(200).json({
+      message:  "Successfully!",
+      result: result
+    });
+
+  },err=>{
+    console.log(err);
+    res.status(400).json({
+      message:  "Was error" + err,
+    });
+  });
+}
+exports.decryptLEDPrivate = (req, res, next) => {
+  console.log('decryptLEDPrivate /API :' );
+  const toDecrypt = req.body.data;
+
+  decryptLEDPrivate(toDecrypt).then(result =>{
+    res.status(200).json({
+      message:  "Successfully!",
+      result: result
+    });
+
+  },err=>{
+    console.log(err);
+    res.status(400).json({
+      message:  "Was error" + err,
+    });
+  });
+}
+
+
+
+// *************************************
 function encodingBase64(data){
   console.log(' fnc encodingBase64() ' + data);
   return new Promise(function(resolve, reject) {
@@ -70,7 +126,6 @@ function encodingBase64(data){
     resolve(base64data);
   });
 }
-
 
 function decodingBase64(data){
   console.log(' fnc decodingBase64() ' + data);
@@ -105,44 +160,90 @@ function decodingBase64(data){
 // console.log('Base64 image data converted to file: stack-abuse-logo-out.png');
 
 
-function encryptURSA(){
+//https://www.npmjs.com/package/node-rsa
+function nodeRSA(){
+
+  console.log('Welocme nodeRSA()');
 
   return new Promise(function(resolve, reject) {
 
-// openssl genrsa -out certs/my-server.key.pem 2048
-// openssl rsa -in certs/my-server.key.pem -pubout -out certs/my-server.pub
+    const NodeRSA = require('node-rsa');
+    const key = new NodeRSA({b: 512});
+    
+    const text = 'Hello RSA!';
+    const encrypted = key.encrypt(text, 'base64');
+    console.log('encrypted: ', encrypted);
+    const decrypted = key.decrypt(encrypted, 'utf8');
+    console.log('decrypted: ', decrypted);
 
-'use strict';
+    resolve('nodeRSA successful.');
 
-var fs = require('fs')
-  , ursa = require('ursa')
-  , crt
-  , key
-  , msg
-  ;
+  })
+}
 
-key = ursa.createPrivateKey(fs.readFileSync('./certs/my-server.key.pem'));
-crt = ursa.createPublicKey(fs.readFileSync('./certs/my-server.pub'));
+function crypto(){
+  console.log('Welcome crypto()');
+  return new Promise(function(resolve, reject) {
 
-console.log('Encrypt with Public');
-msg = crt.encrypt("Everything is going to be 200 OK", 'utf8', 'base64');
-console.log('encrypted', msg, '\n');
+    const crypto = require('crypto');
 
-console.log('Decrypt with Private');
-msg = key.decrypt(msg, 'base64', 'utf8');
-console.log('decrypted', msg, '\n');
+const secret = 'abcdefg';
+const hash = crypto.createHmac('sha256', secret)
+                   .update('I love cupcakes')
+                   .digest('hex');
 
-console.log('############################################');
-console.log('Reverse Public -> Private, Private -> Public');
-console.log('############################################\n');
+    resolve('crypto successful.>>' +hash );
 
-console.log('Encrypt with Private (called public)');
-msg = key.privateEncrypt("Everything is going to be 200 OK", 'utf8', 'base64');
-console.log('encrypted', msg, '\n');
+  });
+}
 
-console.log('Decrypt with Public (called private)');
-msg = crt.publicDecrypt(msg, 'base64', 'utf8');
-console.log('decrypted', msg, '\n');
+
+function encrypLEDpub(toEncrypt) {
+  console.log('Welcome encrypLEDpub()' + toEncrypt);
+  return new Promise(function(resolve, reject) {
+
+    var crypto = require("crypto");
+    var path = require("path");
+    var fs = require("fs");
+    try{
+
+      var relativeOrAbsolutePathToPublicKey ='backend/controllers/certs/my-server.pub'
+      var absolutePath = path.resolve(relativeOrAbsolutePathToPublicKey);
+      var publicKey = fs.readFileSync(absolutePath, "utf8");
+      var buffer = Buffer.from(toEncrypt);
+      var encrypted = crypto.publicEncrypt(publicKey, buffer);
+      resolve( encrypted.toString("base64"));
+    }catch(e){
+      reject(e)
+    }
+
+  });
+}
+
+function decryptLEDPrivate(toDecrypt) {
+  console.log('Welcome decryptLEDPrivate()' + toDecrypt);
+  return new Promise(function(resolve, reject) {
+
+    var crypto = require("crypto");
+    var path = require("path");
+    var fs = require("fs");
+
+    try {
+      
+      var relativeOrAbsolutePathToPublicKey ='backend/controllers/certs/my-server.key.pem'
+      var absolutePath = path.resolve(relativeOrAbsolutePathToPublicKey);
+      var privateKey = fs.readFileSync(absolutePath, "utf8");
+      var buffer = Buffer.from(toDecrypt, "base64");
+      var decrypted = crypto.privateDecrypt(privateKey, buffer);
+
+      resolve(decrypted.toString("utf8"));
+    }
+    catch (e) {
+      reject(e)
+    }
+
+
+    
 
   });
 }
